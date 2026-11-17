@@ -1,0 +1,124 @@
+/* =========================================================
+   Mobil'Efrei global stylesheet — minimalist theme
+   Flat brand blue, white text, yellow as the only accent.
+   Component-specific styles live in each .vue file (<style scoped>)
+   ========================================================= */
+
+/* ---------- Variables (inherited by every element through :root) ---------- */
+:root {
+  --blue: #012d6a;      /* Mobil'Efrei blue: page background */
+  --yellow: #f3b335;    /* Mobil'Efrei yellow: the only accent colour */
+  --text: #ffffff;
+  --muted: rgba(255, 255, 255, 0.6);
+  --line: rgba(255, 255, 255, 0.15);
+  --danger: #ff8a7a;
+  --radius: 10px;
+  --font: 'Inter', system-ui, sans-serif;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ---------- Type selectors (tags) ---------- */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--text);
+  background: var(--blue);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-weight: 600; letter-spacing: -0.02em; line-height: 1.1; margin: 0 0 0.5em; }
+h1 { font-size: clamp(2.2rem, 5vw, 3.6rem); }
+h2 { font-size: 1.5rem; }
+h3 { font-size: 1.05rem; }
+
+p { margin: 0 0 1em; }
+
+a { color: var(--text); text-decoration: underline; text-decoration-color: var(--yellow); text-underline-offset: 4px; }
+a:hover { color: var(--yellow); }
+
+img { max-width: 100%; display: block; }
+
+::selection { background: var(--yellow); color: var(--blue); }
+
+/* Form fields inherit the body font and colour (explicit inheritance) */
+input, textarea, select, button { font: inherit; color: inherit; }
+
+/* ---------- ID selector ---------- */
+/* Specificity (1,0,0): stronger than a class (0,1,0) or a tag (0,0,1) */
+#app { min-height: 100vh; display: flex; flex-direction: column; }
+
+/* ---------- Class selectors ---------- */
+.container { width: min(1080px, 100% - 3rem); margin-inline: auto; }
+.page { flex: 1; padding: 4rem 0 6rem; }
+.muted { color: var(--muted); }
+.accent { color: var(--yellow); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.8rem 1.4rem;
+  border: 1px solid var(--yellow);
+  border-radius: var(--radius);
+  background: var(--yellow);
+  color: var(--blue);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.btn:hover { opacity: 0.85; color: var(--blue); }
+.btn.btn-ghost { background: transparent; color: var(--text); border-color: var(--line); }
+.btn.btn-ghost:hover { border-color: var(--text); color: var(--text); opacity: 1; }
+.btn.btn-small { padding: 0.35rem 0.8rem; font-size: 0.85rem; }
+.btn.btn-block { width: 100%; }
+
+.link-btn { background: none; border: 0; padding: 0; color: var(--muted); cursor: pointer; font-size: 0.85rem; }
+.link-btn:hover { color: var(--text); }
+.link-btn.is-danger:hover { color: var(--danger); }
+
+.form-field { display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 1.2rem; }
+.form-field label { font-size: 0.85rem; color: var(--muted); }
+
+.input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: transparent;
+  transition: border-color 0.2s;
+}
+.input::placeholder { color: rgba(255, 255, 255, 0.35); }
+.input:focus { outline: none; border-color: var(--yellow); }
+select.input option { background: var(--blue); }
+
+/* Class combination (0,2,0): declared after .input:focus so it wins on equal specificity */
+.input.is-invalid { border-color: var(--danger); }
+
+.error-msg { color: var(--danger); font-size: 0.82rem; margin: 0; }
+.alert { padding: 0.8rem 1rem; border: 1px solid var(--danger); border-radius: var(--radius); color: var(--danger); margin-bottom: 1.2rem; }
+.alert.alert-success { border-color: var(--yellow); color: var(--yellow); }
+
+.tag { font-size: 0.8rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 0.1rem 0.6rem; white-space: nowrap; }
+
+/* ---------- Attribute selectors ---------- */
+a[target="_blank"]::after { content: ' ↗'; }                 /* external links */
+button[disabled] { opacity: 0.4; cursor: not-allowed; }       /* disabled buttons */
+input[type="password"] { letter-spacing: 0.12em; }            /* password fields */
+
+/* ---------- Reveal animation (class added in JS by the v-reveal directive) ---------- */
+.reveal { opacity: 0; transform: translateY(12px); transition: opacity 0.8s var(--ease), transform 0.8s var(--ease); }
+.reveal.is-visible { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+}
+
+@media (max-width: 700px) {
+  .container { width: min(1080px, 100% - 2rem); }
+  .page { padding-top: 2rem; }
+}
