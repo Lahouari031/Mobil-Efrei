@@ -1,11 +1,9 @@
-// Global authentication state, shared by every component.
-// reactive() makes the object reactive: when user changes, the UI updates by itself.
 import { reactive } from 'vue';
 import { api } from '../api/client';
 
 export const auth = reactive({
   user: null,
-  loaded: false, // have we already asked the server whether a session exists?
+  loaded: false, 
 
   get isLoggedIn() {
     return this.user !== null;
@@ -25,15 +23,22 @@ export const auth = reactive({
     }
   },
 
-  async login(login, password) {
-    const { user } = await api.post('/auth/login', { login, password });
-    this.user = user;
-  },
+async login(login, password) {
+  const result = await api.post('/auth/login', { login, password });
+  this.user = result.user ?? null;
+  return result;
+},
 
-  async register(payload) {
-    const { user } = await api.post('/auth/register', payload);
-    this.user = user;
-  },
+async register(payload) {
+  const result = await api.post('/auth/register', payload);
+  this.user = result.user ?? null;
+  return result;
+},
+
+async verifyEmail(code) {
+  const { user } = await api.post('/auth/verify-email', { code });
+  this.user = user;
+},
 
   async logout() {
     await api.post('/auth/logout');

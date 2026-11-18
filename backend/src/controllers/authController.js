@@ -1,5 +1,7 @@
 // Authentication controller: register, login, logout, current user
 const bcrypt = require('bcrypt');
+const { randomInt } = require('node:crypto');
+const nodemailer = require('nodemailer');
 const { Op } = require('sequelize');
 const { User } = require('../models');
 const { validateRegister, validateLogin } = require('../validators');
@@ -12,6 +14,31 @@ const regenerateSession = (req) =>
 
 // What we send to the front end: never the password hash
 const publicUser = (u) => ({ id: u.id, email: u.email, username: u.username, role: u.role });
+
+const mailTransport = nodemailer.createTransport({ jsonTransport: true });
+
+async function startEmailVerification(req, user) {
+  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
+  const codeHash = await bcrypt.hash(code, SALT_ROUNDS);
+
+  const mail = await mailTransport.sendMail({
+    from: 'no-reply@mobilefrei.test',
+    to: user.email,
+    subject: "Mobil'Efrei – Confirm your email",
+    text: `Your verification code is ${code}.`,
+  });
+
+  await regenerateSession(req);
+  req.session.pendingVerification = {
+    userId: user.id,
+    codeHash,
+    expiresAt: Date.now() + 10 * 60 * 1000,
+    attempts: 0,
+  };
+
+  console.log(JSON.parse(mail.message).text);
+}
+
 
 // POST /api/auth/register
 exports.register = async (req, res) => {
@@ -26,17 +53,15 @@ exports.register = async (req, res) => {
   if (existing) {
     return res.status(409).json({ error: 'This email or username is already taken.' });
   }
-
+  if (process.env.NODE_ENV !== 'development') {
+  return res.status(503).json({ error: 'Email verification is unavailable.' });
+}
   // Asynchronous password hashing with bcrypt (the salt is included automatically)
   const passwordHash = await bcrypt.hash(req.body.password, SALT_ROUNDS);
   const user = await User.create({ email, username, passwordHash });
 
-  // The user is signed in right after registering
-  await regenerateSession(req); // new session id (protection against session fixation)
-  req.session.userId = user.id;
-  req.session.role = user.role;
-
-  res.status(201).json({ user: publicUser(user) });
+  await startEmailVerification(req, user);
+return res.status(201).json({ requiresVerification: true });
 };
 
 // POST /api/auth/login  (login = email OR username)
@@ -52,12 +77,53 @@ exports.login = async (req, res) => {
   // Same message in both cases so we don't reveal whether the account exists
   const ok = user && (await bcrypt.compare(req.body.password, user.passwordHash));
   if (!ok) return res.status(401).json({ error: 'Incorrect email/username or password.' });
+  if (!user.emailVerifiedAt) {
+  if (process.env.NODE_ENV !== 'development') {
+    return res.status(503).json({ error: 'Email verification is unavailable.' });
+  }
+
+  await startEmailVerification(req, user);
+  return res.json({ requiresVerification: true });
+}
 
   await regenerateSession(req);
   req.session.userId = user.id;
   req.session.role = user.role;
 
   res.json({ user: publicUser(user) });
+};
+
+exports.verifyEmail = async (req, res) => {
+  const pending = req.session.pendingVerification;
+  const code = req.body?.code;
+
+  if (!pending || Date.now() >= pending.expiresAt || pending.attempts >= 5) {
+    return res.status(400).json({ error: 'Sign in again to get a new code.' });
+  }
+
+  if (typeof code !== 'string' || !/^\d{6}$/.test(code)) {
+    return res.status(400).json({ error: 'Enter a six-digit code.' });
+  }
+
+  pending.attempts += 1;
+  if (!(await bcrypt.compare(code, pending.codeHash))) {
+    return res.status(400).json({ error: 'Incorrect verification code.' });
+  }
+
+  const user = await User.findByPk(pending.userId);
+  if (!user) {
+    return res.status(400).json({ error: 'Account not found.' });
+  }
+
+  if (!user.emailVerifiedAt) {
+    await user.update({ emailVerifiedAt: new Date() });
+  }
+
+  await regenerateSession(req);
+  req.session.userId = user.id;
+  req.session.role = user.role;
+
+  return res.json({ user: publicUser(user) });
 };
 
 // POST /api/auth/logout

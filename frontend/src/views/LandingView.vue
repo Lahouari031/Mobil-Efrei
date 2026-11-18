@@ -1,15 +1,13 @@
 <!--
   Landing page (public) = sign-in / sign-up page.
-  Minimal layout: a short introduction with the 3D globe on the left, the large auth panel on the right.
+  A short introduction and the account form.
   The guides themselves stay behind authentication.
 -->
 <template>
   <section class="landing container">
     <div class="landing__intro">
       <h1 class="fade">The semester abroad guide, <span class="accent">by EFREI students.</span></h1>
-      <p class="muted fade">Budgets, places, student life and culture for every destination.</p>
-      <div class="landing__globe fade"><Globe3D /></div>
-      <p class="landing__cities muted fade">Cape Town · Budapest · Warsaw</p>
+      <p class="muted fade">Practical advice and student experiences for your semester in South Africa.</p>
     </div>
 
     <div class="landing__auth fade">
@@ -20,12 +18,11 @@
 
 <script>
 import { gsap } from 'gsap';
-import Globe3D from '../components/Globe3D.vue';
 import AuthPanel from '../components/AuthPanel.vue';
 
 export default {
   name: 'LandingView',
-  components: { Globe3D, AuthPanel },
+  components: { AuthPanel },
   computed: {
     // The active tab of the auth panel follows the URL ("/" or "/register")
     mode() {
@@ -55,11 +52,8 @@ export default {
   padding: 3rem 0;
 }
 .landing__intro h1 { font-size: clamp(2rem, 3.6vw, 2.9rem); max-width: 520px; }
-.landing__globe { width: 100%; max-width: 400px; aspect-ratio: 1; margin: 1.5rem 0 0.5rem; }
-.landing__cities { font-size: 0.85rem; letter-spacing: 0.08em; }
 
 @media (max-width: 900px) {
   .landing { grid-template-columns: 1fr; gap: 2rem; }
-  .landing__globe { max-width: 260px; }
 }
 </style>

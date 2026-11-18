@@ -4,15 +4,33 @@
 -->
 <template>
   <div class="auth">
-    <div class="auth__tabs" role="tablist">
+  <div v-if="!needsVerification" class="auth__tabs" role="tablist">
       <button role="tab" :aria-selected="mode === 'login'" :class="{ 'is-active': mode === 'login' }" @click="switchTo('login')">Sign in</button>
       <button role="tab" :aria-selected="mode === 'register'" :class="{ 'is-active': mode === 'register' }" @click="switchTo('register')">Create account</button>
     </div>
 
     <p v-if="error" class="alert">{{ error }}</p>
+<form v-if="needsVerification" key="verify" novalidate @submit.prevent="submitVerification">
+  <div class="form-field">
+    <label for="verification-code">Enter your six-digit verification code</label>
+    <input
+      id="verification-code"
+      v-model.trim="verificationCode"
+      class="input"
+      type="text"
+      inputmode="numeric"
+      autocomplete="one-time-code"
+      maxlength="6"
+    />
+  </div>
 
+  <button type="submit" class="btn btn-block" :disabled="loading">Verify email</button>
+  <button type="button" class="link-btn" :disabled="loading" @click="backToLogin">
+    Back to sign in
+  </button>
+</form>
     <!-- ================= SIGN IN ================= -->
-    <form v-if="mode === 'login'" key="login" novalidate @submit.prevent="submitLogin">
+    <form v-else-if="mode === 'login'" key="login" novalidate @submit.prevent="submitLogin">
       <div class="form-field">
         <label for="login">EFREI email or username</label>
         <input id="login" v-model.trim="login.login" class="input" autocomplete="username" placeholder="firstname.lastname@efrei.net" required />
@@ -117,6 +135,8 @@ export default {
       showPassword: false,
       loading: false,
       error: '',
+      needsVerification: false,
+      verificationCode: '',
     };
   },
   computed: {
@@ -150,18 +170,54 @@ export default {
   },
   methods: {
     switchTo(mode) {
-      this.$router.replace(mode === 'login' ? '/' : '/register');
+      this.$router.replace({
+        name: mode === 'login' ? 'landing' : 'register',
+        query: this.$route.query,
+      });
     },
     goToApp() {
-      this.$router.push(this.$route.query.redirect || '/destinations');
+      const redirect = auth.isAdmin && this.$route.query.redirect;
+      this.$router.push(redirect || { name: 'explore' });
     },
+    async submitVerification() {
+  if (this.loading) return;
+  this.error = '';
+
+  if (!/^\d{6}$/.test(this.verificationCode)) {
+    this.error = 'Enter a six-digit code.';
+    return;
+  }
+
+  this.loading = true;
+  try {
+    await auth.verifyEmail(this.verificationCode);
+    this.goToApp();
+  } catch (e) {
+    this.error = e.message;
+  } finally {
+    this.loading = false;
+  }
+},
+
+backToLogin() {
+  this.needsVerification = false;
+  this.verificationCode = '';
+  this.error = '';
+  this.switchTo('login');
+},
     async submitLogin() {
       if (!this.canLogin) return;
       this.loading = true;
       this.error = '';
       try {
-        await auth.login(this.login.login, this.login.password);
-        this.goToApp();
+        const result = await auth.login(this.login.login, this.login.password);
+
+if (result.requiresVerification) {
+  this.needsVerification = true;
+  return;
+}
+
+this.goToApp();
       } catch (e) {
         this.error = e.message;
       } finally {
@@ -175,8 +231,14 @@ export default {
       this.error = '';
       try {
         const { email, username, password } = this.reg;
-        await auth.register({ email, username, password });
-        this.goToApp();
+        const result = await auth.register({ email, username, password });
+
+if (result.requiresVerification) {
+  this.needsVerification = true;
+  return;
+}
+
+this.goToApp();
       } catch (e) {
         this.error = e.message;
       } finally {

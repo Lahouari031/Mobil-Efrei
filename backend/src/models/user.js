@@ -22,6 +22,7 @@ module.exports = (sequelize) =>
       // The password is NEVER stored in plain text: only its bcrypt hash
       passwordHash: { type: DataTypes.STRING(100), allowNull: false },
       role: { type: DataTypes.ENUM('user', 'admin'), allowNull: false, defaultValue: 'user' },
+      emailVerifiedAt: { type: DataTypes.DATE, allowNull: true },
     },
     {
       tableName: 'users',

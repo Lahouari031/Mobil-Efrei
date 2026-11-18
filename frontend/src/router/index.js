@@ -4,6 +4,7 @@ import { auth } from '../store/auth';
 
 import LandingView from '../views/LandingView.vue';
 import HomeView from '../views/HomeView.vue';
+import ExploreView from '../views/ExploreView.vue';
 import DestinationView from '../views/DestinationView.vue';
 import AdminView from '../views/AdminView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
@@ -15,6 +16,7 @@ const routes = [
   { path: '/login', redirect: '/' },
 
   // Protected pages
+  { path: '/explore', name: 'explore', component: ExploreView, meta: { requiresAuth: true } },
   { path: '/destinations', name: 'home', component: HomeView, meta: { requiresAuth: true } },
   { path: '/destinations/:slug', name: 'destination', component: DestinationView, meta: { requiresAuth: true }, props: true },
   { path: '/admin', name: 'admin', component: AdminView, meta: { requiresAuth: true, requiresAdmin: true } },
@@ -39,8 +41,8 @@ router.beforeEach(async (to) => {
   if (to.meta.requiresAuth && !auth.isLoggedIn) {
     return { name: 'landing', query: { redirect: to.fullPath } };
   }
-  if (to.meta.requiresAdmin && !auth.isAdmin) return { name: 'home' };
-  if (to.meta.guestOnly && auth.isLoggedIn) return { name: 'home' };
+  if (to.meta.requiresAdmin && !auth.isAdmin) return { name: 'explore' };
+  if (to.meta.guestOnly && auth.isLoggedIn) return { name: 'explore' };
 });
 
 export default router;

@@ -12,6 +12,7 @@ const router = express.Router();
 
 // ---------- Authentication (public) ----------
 router.post('/auth/register', h(auth.register));
+router.post('/auth/verify-email', h(auth.verifyEmail));
 router.post('/auth/login', h(auth.login));
 router.post('/auth/logout', auth.logout);
 router.get('/auth/me', h(auth.me));

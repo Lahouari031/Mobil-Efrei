@@ -1,18 +1,17 @@
-<!--
-  Minimal 3D globe (Three.js) shown on the landing page.
-  - Continents drawn with small yellow dots (rough outlines + point-in-polygon test)
-  - Thin flight arcs from Paris to each destination
-  - Slow sway, follows the mouse slightly
--->
 <template>
-  <div ref="wrap" class="globe" aria-hidden="true"></div>
+  <div class="globe">
+    <div ref="canvas" class="globe__canvas" aria-hidden="true"></div>
+    <p v-if="unavailable" class="globe__notice muted">The 3D globe is unavailable on this device.</p>
+    <div ref="marker" class="globe__marker">
+      <slot name="marker" />
+    </div>
+  </div>
 </template>
 
 <script>
 import * as THREE from 'three';
 import { GLOBE_POINTS } from '../constants';
 
-// Very rough continent outlines as [longitude, latitude] polygons (enough for a dotted style)
 const CONTINENTS = [
   [[-17, 21], [-10, 30], [-5, 36], [10, 37], [20, 32], [32, 31], [35, 28], [43, 12], [51, 12], [42, -2], [40, -15], [35, -25], [27, -34], [18, -35], [12, -17], [9, -1], [8, 4], [-8, 4], [-17, 14]], // Africa
   [[-10, 36], [-9, 43], [-2, 44], [-5, 48], [2, 51], [8, 54], [5, 58], [10, 63], [20, 70], [30, 70], [40, 67], [45, 55], [40, 47], [30, 45], [28, 41], [22, 37], [15, 38], [12, 44], [5, 43], [-2, 37]], // Europe
@@ -25,7 +24,6 @@ const CONTINENTS = [
   [[44, -25], [47, -25], [50, -15], [49, -12]], // Madagascar
 ];
 
-// Classic ray-casting point-in-polygon test
 function inPolygon(lon, lat, poly) {
   let inside = false;
   for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -36,17 +34,19 @@ function inPolygon(lon, lat, poly) {
   return inside;
 }
 
-// Converts latitude/longitude into a 3D position on a sphere of radius r
 function latLonToVec3(lat, lon, r) {
   const phi = THREE.MathUtils.degToRad(90 - lat);
   const theta = THREE.MathUtils.degToRad(lon + 180);
   return new THREE.Vector3(-r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi), r * Math.sin(phi) * Math.sin(theta));
 }
 
-const R = 2; // globe radius
+const R = 2; 
 
 export default {
   name: 'Globe3D',
+  data() {
+    return { unavailable: false };
+  },
   mounted() {
     this.init();
   },
@@ -54,7 +54,6 @@ export default {
     // Free GPU memory and remove listeners when the component disappears
     cancelAnimationFrame(this.frame);
     window.removeEventListener('resize', this.onResize);
-    window.removeEventListener('mousemove', this.onMouseMove);
     this.renderer?.dispose();
     this.scene?.traverse((o) => {
       o.geometry?.dispose();
@@ -63,11 +62,18 @@ export default {
   },
   methods: {
     init() {
-      const el = this.$refs.wrap;
+      const el = this.$refs.canvas;
+      const marker = this.$refs.marker;
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       // ---------- Renderer, scene, camera ----------
-      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      let renderer;
+      try {
+        renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      } catch {
+        this.unavailable = true;
+        return;
+      }
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(el.clientWidth, el.clientHeight);
       el.appendChild(renderer.domElement);
@@ -100,64 +106,93 @@ export default {
       dotsGeo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
       globe.add(new THREE.Points(dotsGeo, new THREE.PointsMaterial({ color: 0xf3b335, size: 0.02, transparent: true, opacity: 0.85 })));
 
-      // ---------- Markers + flight arcs from Paris ----------
+      // ---------- Markers and flight arc ----------
       const dotGeo = new THREE.SphereGeometry(0.04, 16, 16);
       const paris = latLonToVec3(GLOBE_POINTS.paris.lat, GLOBE_POINTS.paris.lon, R);
       const parisDot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
       parisDot.position.copy(paris);
       globe.add(parisDot);
 
-      this.arcs = GLOBE_POINTS.destinations.map((d, i) => {
-        const end = latLonToVec3(d.lat, d.lon, R);
-        const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-        dot.position.copy(end);
-        globe.add(dot);
+      const { lat, lon } = GLOBE_POINTS.capeTown;
+      const capeTown = latLonToVec3(lat, lon, R);
+      const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      dot.position.copy(capeTown);
+      globe.add(dot);
 
-        // Curved arc: the middle point is lifted above the surface
-        const mid = paris.clone().add(end).multiplyScalar(0.5);
-        mid.normalize().multiplyScalar(R + paris.distanceTo(end) * 0.4);
-        const curve = new THREE.QuadraticBezierCurve3(paris, mid, end);
-        const geo = new THREE.BufferGeometry().setFromPoints(curve.getPoints(100));
-        geo.setDrawRange(0, 0); // drawn progressively in the animation loop
-        globe.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })));
-        return { geo, delay: i * 0.4 };
-      });
+      // Lift the middle of the flight arc above the surface.
+      const mid = paris.clone().add(capeTown).multiplyScalar(0.5);
+      mid.normalize().multiplyScalar(R + paris.distanceTo(capeTown) * 0.4);
+      const curve = new THREE.QuadraticBezierCurve3(paris, mid, capeTown);
+      const arc = new THREE.BufferGeometry().setFromPoints(curve.getPoints(100));
+      globe.add(new THREE.Line(arc, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })));
 
       // Initial orientation: Europe and Africa face the camera
       const baseY = -Math.PI / 2 - THREE.MathUtils.degToRad(15);
-      globe.rotation.set(0.42, baseY, 0);
+      const baseX = -0.22;
+      globe.rotation.set(baseX, baseY, 0);
+      const screenPoint = new THREE.Vector3();
 
-      // ---------- Interactions (DOM events with callbacks) ----------
-      const mouse = { x: 0, y: 0 };
-      this.onMouseMove = (e) => {
-        mouse.x = e.clientX / window.innerWidth - 0.5;
-        mouse.y = e.clientY / window.innerHeight - 0.5;
-      };
+  
       this.onResize = () => {
         camera.aspect = el.clientWidth / el.clientHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(el.clientWidth, el.clientHeight);
+        if (reduceMotion) draw();
       };
-      window.addEventListener('mousemove', this.onMouseMove);
       window.addEventListener('resize', this.onResize);
 
       // ---------- Animation loop ----------
+      const draw = () => {
+        renderer.render(scene, camera);
+        // Project Cape Town onto the screen so its HTML link follows the globe.
+        screenPoint.copy(capeTown).applyMatrix4(globe.matrixWorld).project(camera);
+        marker.style.left = ((screenPoint.x + 1) * 50) + '%';
+        marker.style.top = ((1 - screenPoint.y) * 50) + '%';
+      };
+      
+      let drag = null;
+      el.onpointerdown = (event) => {
+        if (event.button !== 0 || drag) return;
+        drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+        el.setPointerCapture(event.pointerId);  
+      };
+
+      el.onpointermove = (event) => {
+        if (drag?.id !== event.pointerId) return;
+          const sensitivity = Math.PI / el.clientWidth;
+          const dx = event.clientX - drag.x;
+          const dy = event.clientY - drag.y;
+          globe.rotation.y += dx * sensitivity;
+          globe.rotation.x = THREE.MathUtils.clamp(
+          globe.rotation.x + dy * sensitivity,
+          -Math.PI / 2,
+          Math.PI / 2,
+           );
+
+          drag.x = event.clientX;
+          drag.y = event.clientY;
+          draw();
+        };
+
+        el.onlostpointercapture = (event) => {
+          if (drag?.id === event.pointerId) drag = null;
+          };
+
       const start = performance.now();
       const tick = () => {
         const t = (performance.now() - start) / 1000; // elapsed time in seconds
-        const sway = reduceMotion ? 0 : Math.sin(t * 0.2) * 0.3;
-        globe.rotation.y += (baseY + sway + mouse.x * 0.3 - globe.rotation.y) * 0.04;
-        globe.rotation.x += (0.42 + mouse.y * 0.15 - globe.rotation.x) * 0.04;
 
-        this.arcs.forEach((a) => {
-          const p = Math.max(0, Math.min(1, (t - 0.5 - a.delay) / 1.5));
-          a.geo.setDrawRange(0, Math.floor(p * 101));
-        });
+        const progress = Math.max(0, Math.min(1, (t - 0.5) / 1.5));
+        arc.setDrawRange(0, Math.floor(progress * 101));
 
-        renderer.render(scene, camera);
+        draw();
         this.frame = requestAnimationFrame(tick);
       };
-      tick();
+      if (reduceMotion) {
+        draw();
+      } else {
+        tick();
+      }
 
       this.renderer = renderer;
       this.scene = scene;
@@ -167,6 +202,9 @@ export default {
 </script>
 
 <style scoped>
-.globe { width: 100%; height: 100%; }
-.globe :deep(canvas) { display: block; }
+.globe { position: relative; width: 100%; height: 100%; }
+.globe__canvas { width: 100%; height: 100%; }
+.globe__canvas :deep(canvas) { display: block; }
+.globe__marker { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -22px); }
+.globe__notice { position: absolute; top: 25%; width: 100%; padding-inline: 1rem; text-align: center; }
 </style>

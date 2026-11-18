@@ -2,12 +2,12 @@
 <template>
   <header class="navbar">
     <nav class="container navbar__inner">
-      <router-link :to="auth.isLoggedIn ? '/destinations' : '/'" class="navbar__brand" aria-label="Mobil'Efrei home">
+      <router-link :to="auth.isLoggedIn ? '/explore' : '/'" class="navbar__brand" aria-label="Mobil'Efrei home">
         <AppLogo :height="32" />
       </router-link>
 
       <ul v-if="auth.isLoggedIn" class="navbar__links">
-        <li><router-link to="/destinations">Destinations</router-link></li>
+        <li><router-link to="/explore">Explore</router-link></li>
         <li v-if="auth.isAdmin"><router-link to="/admin">Admin</router-link></li>
         <li class="muted">@{{ auth.user.username }}</li>
         <li><button class="link-btn" @click="onLogout">Sign out</button></li>

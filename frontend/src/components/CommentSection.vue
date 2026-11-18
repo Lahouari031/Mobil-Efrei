@@ -1,10 +1,10 @@
 <!--
-  "Student feedback" area of a destination: publish form + list sorted by likes.
+  "Student posts" area of a destination: publish form + list sorted by likes.
   It is the parent of the CommentItem components: it listens to their events and calls the API.
 -->
 <template>
-  <section>
-    <h2>Student feedback</h2>
+  <section aria-labelledby="student-posts-heading">
+    <h2 id="student-posts-heading">Student posts</h2>
     <p class="muted">Share a tip. The most liked ones rise to the top.</p>
 
     <form class="form" novalidate @submit.prevent="publish">
@@ -29,7 +29,7 @@
     </form>
 
     <p v-if="loading" class="muted">Loading…</p>
-    <p v-else-if="!comments.length" class="muted">No feedback yet. Be the first!</p>
+    <p v-else-if="!comments.length" class="muted">No posts yet. Be the first!</p>
 
     <TransitionGroup name="list" tag="ul" class="list">
       <CommentItem

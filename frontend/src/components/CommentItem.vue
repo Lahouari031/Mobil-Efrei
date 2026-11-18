@@ -1,8 +1,3 @@
-<!--
-  One comment. Parent <-> child communication:
-  - the parent passes the comment through a prop
-  - the child notifies the parent with events ($emit): like, unlike, update, delete
--->
 <template>
   <li class="comment">
     <blockquote v-if="!editing" class="comment__text">“{{ comment.content }}”</blockquote>

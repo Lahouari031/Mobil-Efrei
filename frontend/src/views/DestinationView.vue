@@ -1,11 +1,11 @@
-<!-- Destination page: header, key facts, tips by category, student feedback -->
+<!-- Destination page: practical guide and student publications -->
 <template>
   <div class="container narrow">
     <p v-if="loading" class="muted">Loading…</p>
     <p v-else-if="error" class="alert">{{ error }}</p>
 
     <template v-else-if="destination">
-      <router-link to="/destinations" class="back">← Destinations</router-link>
+      <router-link :to="{ name: 'explore' }" class="back">← Back to the globe</router-link>
 
       <header class="head">
         <p class="muted">{{ destination.flag }} {{ destination.country }}</p>
@@ -15,22 +15,20 @@
 
       <div v-if="destination.imageUrl" class="cover" :style="{ backgroundImage: `url(${destination.imageUrl})` }"></div>
 
-      <dl class="facts">
-        <div><dt>Budget</dt><dd>{{ destination.monthlyBudget ? `≈ €${destination.monthlyBudget}/month` : '—' }}</dd></div>
-        <div><dt>Language</dt><dd>{{ destination.language || '—' }}</dd></div>
-        <div><dt>Currency</dt><dd>{{ destination.currency || '—' }}</dd></div>
-      </dl>
-
       <p class="summary">{{ destination.summary }}</p>
 
-      <section class="block">
-        <h2>Guide</h2>
+      <section class="block" aria-labelledby="practical-guide-heading">
+        <h2 id="practical-guide-heading">Practical guide</h2>
+        <dl class="facts">
+          <div><dt>Budget</dt><dd>{{ destination.monthlyBudget ? `≈ €${destination.monthlyBudget}/month` : '—' }}</dd></div>
+          <div><dt>Language</dt><dd>{{ destination.language || '—' }}</dd></div>
+          <div><dt>Currency</dt><dd>{{ destination.currency || '—' }}</dd></div>
+        </dl>
+
         <TipTabs :tips="destination.tips" />
       </section>
 
-      <section class="block">
-        <CommentSection :destination-id="destination.id" />
-      </section>
+      <CommentSection :destination-id="destination.id" class="block" />
     </template>
   </div>
 </template>
@@ -80,6 +78,6 @@ export default {
 .facts dt { font-size: 0.78rem; color: var(--muted); }
 .facts dd { margin: 0.2rem 0 0; font-weight: 500; }
 .summary { font-size: 1.1rem; }
-.block { margin-top: 4rem; }
+.block { margin-top: 2.5rem; }
 @media (max-width: 600px) { .facts { grid-template-columns: 1fr; } }
 </style>
