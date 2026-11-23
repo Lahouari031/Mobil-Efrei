@@ -127,10 +127,11 @@ export default {
       globe.add(new THREE.Line(arc, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })));
 
       // Initial orientation: Europe and Africa face the camera
-      const baseY = -Math.PI / 2 - THREE.MathUtils.degToRad(15);
-      const baseX = -0.22;
+      const baseY = -Math.PI / 2 - THREE.MathUtils.degToRad(GLOBE_POINTS.paris.lon);
+      const baseX = THREE.MathUtils.degToRad(GLOBE_POINTS.paris.lat);
       globe.rotation.set(baseX, baseY, 0);
       const screenPoint = new THREE.Vector3();
+      
 
   
       this.onResize = () => {

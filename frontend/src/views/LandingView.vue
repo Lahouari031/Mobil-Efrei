@@ -7,7 +7,7 @@
   <section class="landing container">
     <div class="landing__intro">
       <h1 class="fade">The semester abroad guide, <span class="accent">by EFREI students.</span></h1>
-      <p class="muted fade">Practical advice and student experiences for your semester in South Africa.</p>
+      <p class="muted fade">Practical advice and student experiences for your exchange semester of Inge1.</p>
     </div>
 
     <div class="landing__auth fade">

@@ -7,6 +7,7 @@ const auth = require('../controllers/authController');
 const destinations = require('../controllers/destinationController');
 const tips = require('../controllers/tipController');
 const comments = require('../controllers/commentController');
+const urgentAlerts = require('../controllers/urgentAlertController');
 
 const router = express.Router();
 
@@ -37,5 +38,35 @@ router.put('/comments/:id', requireAuth, h(comments.update));
 router.delete('/comments/:id', requireAuth, h(comments.remove));
 router.post('/comments/:id/like', requireAuth, h(comments.like));
 router.delete('/comments/:id/like', requireAuth, h(comments.unlike));
+
+// ---------- Urgent Alerts ----------
+
+// Students: read active alerts
+router.get(
+  '/destinations/:destinationId/urgent-alerts',
+  requireAuth,
+  h(urgentAlerts.listForDestination)
+);
+
+// Admin: read all alerts
+router.get(
+  '/urgent-alerts',
+  requireAdmin,
+  h(urgentAlerts.listForAdmin)
+);
+
+// Admin: create an alert
+router.post(
+  '/urgent-alerts',
+  requireAdmin,
+  h(urgentAlerts.create)
+);
+
+// Admin: update or deactivate an alert
+router.put(
+  '/urgent-alerts/:id',
+  requireAdmin,
+  h(urgentAlerts.update)
+);
 
 module.exports = router;

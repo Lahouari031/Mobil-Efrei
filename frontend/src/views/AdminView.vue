@@ -44,6 +44,68 @@
         </table>
       </section>
     </div>
+    <section class="alerts-admin">
+  <h2>Urgent alerts — Cape Town</h2>
+
+  <form @submit.prevent="publishAlert">
+    <div class="form-field">
+      <label for="alert-title">Alert title</label>
+      <input
+        id="alert-title"
+        v-model="newAlert.title"
+        class="input"
+        maxlength="150"
+        required
+      />
+    </div>
+
+    <div class="form-field">
+  <label for="alert-date">Alert date</label>
+  <input
+    id="alert-date"
+    type="date"
+    v-model="newAlert.alertDate"
+    class="input"
+    required
+  />
+</div>
+
+
+    <div class="form-field">
+      <label for="alert-details">Alert details</label>
+      <textarea
+        id="alert-details"
+        v-model="newAlert.details"
+        class="input"
+        rows="4"
+        required
+      ></textarea>
+    </div>
+
+    <button class="btn" :disabled="savingAlert">
+      {{ savingAlert ? 'Publishing...' : 'Publish alert' }}
+    </button>
+  </form>
+
+  <h3>Published alerts</h3>
+
+  <p v-if="!urgentAlerts.length" class="muted">
+    No alerts yet.
+  </p>
+
+  <ul v-else>
+    <li v-for="alert in urgentAlerts" :key="alert.id">
+      <strong>{{ alert.title }}</strong>
+      <span class="muted">
+  {{ formatAlertDate(alert.alertDate || alert.createdAt) }}
+</span>
+      <span>{{ alert.active ? 'Active' : 'Inactive' }}</span>
+      <button class="link-btn" @click="toggleAlert(alert)">
+        {{ alert.active ? 'Deactivate' : 'Reactivate' }}
+      </button>
+    </li>
+  </ul>
+</section>
   </div>
 </template>
 
@@ -56,8 +118,31 @@ export default {
   name: 'AdminView',
   components: { TipForm },
   data() {
-    return { destinations: [], tips: [], editing: null, filterDest: 0, message: '', messageType: 'success' };
-  },
+    const now = new Date();
+
+const today = [
+  now.getFullYear(),
+  String(now.getMonth() + 1).padStart(2, '0'),
+  String(now.getDate()).padStart(2, '0')
+].join('-');
+  return {
+    destinations: [],
+    tips: [],
+    editing: null,
+    filterDest: 0,
+    message: '',
+    messageType: 'success',
+
+    urgentAlerts: [],
+    newAlert: {
+  destinationId: null,
+  title: '',
+  details: '',
+  alertDate: today
+},
+    savingAlert: false
+  };
+},
   computed: {
     filteredTips() {
       return this.filterDest ? this.tips.filter((t) => t.destinationId === this.filterDest) : this.tips;
@@ -68,8 +153,62 @@ export default {
     const [destinations, tips] = await Promise.all([api.get('/destinations'), api.get('/tips')]);
     this.destinations = destinations;
     this.tips = tips;
+    this.newAlert.destinationId =
+  destinations.find(d => d.slug === 'cape-town')?.id ?? null;
+
+try {
+  this.urgentAlerts = await api.get('/urgent-alerts');
+} catch (e) {
+  this.notify(e.message, 'error');
+}
   },
   methods: {
+    formatAlertDate(date) {
+  return new Date(date).toLocaleDateString('en-GB');
+},
+
+async publishAlert() {
+  if (this.savingAlert) return;
+
+  if (!this.newAlert.destinationId) {
+    this.notify('Cape Town not found.', 'error');
+    return;
+  }
+
+  this.savingAlert = true;
+
+  try {
+    await api.post('/urgent-alerts', {
+  destinationId: this.newAlert.destinationId,
+  title: this.newAlert.title.trim(),
+  details: this.newAlert.details.trim(),
+  alertDate: this.newAlert.alertDate
+});
+    this.urgentAlerts = await api.get('/urgent-alerts');
+
+    this.newAlert.title = '';
+    this.newAlert.details = '';
+
+    this.notify('Alert published.');
+  } catch (e) {
+    this.notify(e.message, 'error');
+  } finally {
+    this.savingAlert = false;
+  }
+},
+
+async toggleAlert(alert) {
+  try {
+    await api.put(`/urgent-alerts/${alert.id}`, {
+      active: !alert.active
+    });
+
+    this.urgentAlerts = await api.get('/urgent-alerts');
+    this.notify('Alert status updated.');
+  } catch (e) {
+    this.notify(e.message, 'error');
+  }
+},
     categoryLabel,
     notify(text, type = 'success') {
       this.message = text;
@@ -124,4 +263,25 @@ export default {
 .actions { text-align: right; white-space: nowrap; }
 .actions .link-btn + .link-btn { margin-left: 0.9rem; }
 @media (max-width: 950px) { .admin { grid-template-columns: 1fr; } }
+.alerts-admin {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+
+.alerts-admin form {
+  display: grid;
+  gap: 1rem;
+  max-width: 550px;
+  margin: 1.5rem 0 2rem;
+}
+
+.alerts-admin li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--line);
+}
 </style>

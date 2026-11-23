@@ -11,7 +11,7 @@ export const CATEGORIES = [
 export const categoryLabel = (key) => CATEGORIES.find((c) => c.key === key)?.label ?? key;
 
 // Same rules as on the server (client-side validation = comfort, server-side = security)
-export const EMAIL_REGEX = /^[a-z0-9._%+-]+@efrei\.(net|fr)$/i;
+export const EMAIL_REGEX = /^[a-z0-9._%+-]+@efrei\.net$/i;
 export const USERNAME_REGEX = /^[a-zA-Z0-9_]{3,20}$/;
 export const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d).{8,72}$/;
 

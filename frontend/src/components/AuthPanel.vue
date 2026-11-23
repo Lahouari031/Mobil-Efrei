@@ -113,7 +113,7 @@
       </div>
 
       <button class="btn btn-block" :disabled="loading">{{ loading ? 'Creating…' : 'Create account' }}</button>
-      <p class="auth__note muted">Reserved for @efrei.net and @efrei.fr addresses.</p>
+      <p class="auth__note muted">Registration is only available with an @efrei.net email address.</p>
     </form>
   </div>
 </template>
@@ -146,7 +146,7 @@ export default {
     // Client-side validation, recomputed on every keystroke
     errors() {
       const e = {};
-      if (!EMAIL_REGEX.test(this.reg.email)) e.email = 'Use your @efrei.net or @efrei.fr email address.';
+      if (!EMAIL_REGEX.test(this.reg.email)) e.email = 'Only @efrei.net email addresses are accepted.';
       if (!USERNAME_REGEX.test(this.reg.username)) e.username = 'Invalid username.';
       if (!PASSWORD_REGEX.test(this.reg.password)) e.password = 'At least 8 characters, including a letter and a digit.';
       if (this.reg.confirm !== this.reg.password) e.confirm = 'Passwords do not match.';

@@ -8,9 +8,15 @@
       <router-link :to="{ name: 'explore' }" class="back">← Back to the globe</router-link>
 
       <header class="head">
-        <p class="muted">{{ destination.flag }} {{ destination.country }}</p>
-        <h1>{{ destination.city }}</h1>
-        <p v-if="destination.university" class="muted">{{ destination.university }}</p>
+        <div class="head__main">
+          <p class="muted">{{ destination.flag }} {{ destination.country }}</p>
+          <h1>{{ destination.city }}</h1>
+          <p v-if="destination.university" class="muted">
+            {{ destination.university }}
+          </p>
+        </div>
+
+        <UrgentAlerts :destination-id="destination.id" />
       </header>
 
       <div v-if="destination.imageUrl" class="cover" :style="{ backgroundImage: `url(${destination.imageUrl})` }"></div>
@@ -34,13 +40,14 @@
 </template>
 
 <script>
+import UrgentAlerts from '../components/UrgentAlerts.vue';
 import TipTabs from '../components/TipTabs.vue';
 import CommentSection from '../components/CommentSection.vue';
 import { api } from '../api/client';
 
 export default {
   name: 'DestinationView',
-  components: { TipTabs, CommentSection },
+  components: { TipTabs, CommentSection, UrgentAlerts },
   props: { slug: { type: String, required: true } },
   data() {
     return { destination: null, loading: true, error: '' };
@@ -70,7 +77,19 @@ export default {
 .narrow { max-width: 760px; }
 .back { font-size: 0.88rem; text-decoration: none; color: var(--muted); }
 .back:hover { color: var(--text); }
-.head { margin: 2rem 0 2rem; }
+.head {
+  margin: 2rem 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 2rem;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .head {
+    grid-template-columns: 1fr;
+  }
+}
 .head h1 { margin: 0.2rem 0 0.4rem; }
 .head p { margin: 0; }
 .cover { aspect-ratio: 16 / 7; border-radius: var(--radius); background: rgba(255, 255, 255, 0.05) center/cover; margin-bottom: 2rem; }

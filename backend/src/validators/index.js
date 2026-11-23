@@ -11,7 +11,7 @@ const isString = (v) => typeof v === 'string';
 
 function validateRegister({ email, username, password }) {
   const errors = [];
-  if (!isString(email) || !EMAIL_REGEX.test(email.trim())) errors.push('Invalid EFREI email (@efrei.net or @efrei.fr).');
+  if (!isString(email) || !EMAIL_REGEX.test(email.trim())) errors.push('Only @efrei.net email addresses are accepted.');
   if (!isString(username) || !USERNAME_REGEX.test(username.trim())) errors.push('Username: 3 to 20 characters (letters, digits, _).');
   if (!isString(password) || !PASSWORD_REGEX.test(password)) errors.push('Password: at least 8 characters, with at least one letter and one digit.');
   return errors;

@@ -12,9 +12,10 @@ const db = {
   Tip: require('./tip')(sequelize),
   Comment: require('./comment')(sequelize),
   Like: require('./like')(sequelize),
+  UrgentAlert: require('./urgentAlert')(sequelize),
 };
 
-const { User, Destination, Tip, Comment, Like } = db;
+const { User, Destination, Tip, Comment, Like, UrgentAlert } = db;
 
 // ---------- Relationships ----------
 // A destination has many tips (1-N)
@@ -35,6 +36,17 @@ Comment.belongsToMany(User, { through: Like, foreignKey: 'commentId', otherKey: 
 Comment.hasMany(Like, { foreignKey: 'commentId', as: 'likes', onDelete: 'CASCADE' });
 Like.belongsTo(Comment, { foreignKey: 'commentId' });
 Like.belongsTo(User, { foreignKey: 'userId' });
+
+Destination.hasMany(UrgentAlert, {
+  foreignKey: 'destinationId',
+  as: 'urgentAlerts',
+  onDelete: 'CASCADE',
+});
+
+UrgentAlert.belongsTo(Destination, {
+  foreignKey: 'destinationId',
+  as: 'destination',
+});
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;
