@@ -17,7 +17,16 @@ Signed-in students post feedback, the community likes it, and the most useful ti
 | Security | bcrypt, express-session (httpOnly cookie), parameterised queries, email verification code |
 | External APIs | OpenStreetMap tiles (map), Nominatim (address → coordinates), TikTok oEmbed + embed player (videos) |
 
-## Setup
+## Quick start (from the project root)
+```bash
+npm run setup        # creates backend/.env and installs everything
+                     # -> open backend/.env and fill in DB_PASSWORD and ADMIN2_PASSWORD
+npm run db:setup     # creates the database, the tables and the starter data
+npm run dev          # starts the API (port 3000) AND the website: http://localhost:5173
+```
+After pulling new changes: `npm run setup` then `npm run db:reset`.
+
+## Setup (step by step)
 
 ### Requirements
 - Node.js 18 or newer
@@ -147,8 +156,8 @@ The full SQL schema is in `backend/schema.sql`.
 | SQL injection | Sequelize generates parameterised queries. Tested with `admin' OR '1'='1`: sign-in is refused |
 | External APIs | `TipMap.vue` (Leaflet + OpenStreetMap tiles), `TipForm.vue` (Nominatim geocoding, "Locate" button), `services/tiktokPreview.js` (TikTok oEmbed) and `TikTokVideos.vue` (TikTok embed player) |
 
-## Destination page tabs
-- **Budget, Best places, Student life, Culture & language, Typical schedule, EFREI resources**: the tips, managed in the admin area.
-- **Map**: every tip with coordinates is a pin on an OpenStreetMap map (click → tip + directions). In the admin form, type an address and click **Locate** to fill the latitude / longitude automatically.
-- **Videos**: grid of TikTok previews; clicking one plays it in a player on the page (no redirection). Admins add the links in the admin area.
+## Destination page
+- **Tabs** (Budget, Best places, Student life, Culture & language, Typical schedule, EFREI resources): the tips, managed in the admin area.
+- **Map** (bottom of the *Best places* tab): every tip with coordinates is a pin on an OpenStreetMap map (click → tip + directions). In the admin form, type an address and click **Locate** to fill the latitude / longitude automatically.
+- **Videos** (end of the page, just above the comments): grid of TikTok previews; clicking one plays it in a player on the page (no redirection). Admins add the links in the admin area.
 - **Urgent alerts** (top right): published by an admin for one destination, kept in history, and only shown while they are active.

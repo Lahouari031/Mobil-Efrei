@@ -1,0 +1,14 @@
+{
+  "name": "mobilefrei",
+  "private": true,
+  "description": "Mobil'Efrei: shortcuts to install and run the back end and the front end together",
+  "scripts": {
+    "setup": "node -e \"const fs=require('fs');if(!fs.existsSync('backend/.env')){fs.copyFileSync('backend/.env.example','backend/.env');console.log('backend/.env created: fill in DB_PASSWORD and ADMIN2_PASSWORD')}\" && npm install && npm install --prefix backend && npm install --prefix frontend",
+    "db:setup": "npm run db:create --prefix backend && npm run db:migrate --prefix backend && npm run db:seed --prefix backend",
+    "db:reset": "npm run db:reset --prefix backend",
+    "dev": "concurrently -n api,site -c yellow,cyan \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
+  }
+}
