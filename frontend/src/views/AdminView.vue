@@ -45,9 +45,33 @@
       </section>
     </div>
     <section class="alerts-admin">
-  <h2>Urgent alerts — Cape Town</h2>
+  <h2>Urgent alerts</h2>
 
   <form @submit.prevent="publishAlert">
+
+    <!-- Choix de la destination -->
+    <div class="form-field">
+      <label for="alert-destination">Destination</label>
+
+      <select
+        id="alert-destination"
+        v-model.number="newAlert.destinationId"
+        class="input"
+        required
+      >
+        <option :value="null" disabled>
+          Select a destination
+        </option>
+
+        <option
+          v-for="d in destinations"
+          :key="d.id"
+          :value="d.id"
+        >
+          {{ d.city }} — {{ d.country }}
+        </option>
+      </select>
+    </div>
     <div class="form-field">
       <label for="alert-title">Alert title</label>
       <input
@@ -96,6 +120,9 @@
   <ul v-else>
     <li v-for="alert in urgentAlerts" :key="alert.id">
       <strong>{{ alert.title }}</strong>
+      <span class="muted">
+  {{ destinationName(alert.destinationId) }}
+</span>
       <span class="muted">
   {{ formatAlertDate(alert.alertDate || alert.createdAt) }}
 </span>
@@ -153,8 +180,6 @@ const today = [
     const [destinations, tips] = await Promise.all([api.get('/destinations'), api.get('/tips')]);
     this.destinations = destinations;
     this.tips = tips;
-    this.newAlert.destinationId =
-  destinations.find(d => d.slug === 'cape-town')?.id ?? null;
 
 try {
   this.urgentAlerts = await api.get('/urgent-alerts');
@@ -163,6 +188,15 @@ try {
 }
   },
   methods: {
+    destinationName(id) {
+  const destination = this.destinations.find(
+    d => d.id === Number(id)
+  );
+
+  return destination
+    ? `${destination.city} — ${destination.country}`
+    : 'Unknown destination';
+},
     formatAlertDate(date) {
   return new Date(date).toLocaleDateString('en-GB');
 },
@@ -171,9 +205,9 @@ async publishAlert() {
   if (this.savingAlert) return;
 
   if (!this.newAlert.destinationId) {
-    this.notify('Cape Town not found.', 'error');
-    return;
-  }
+  this.notify('Please select a destination.', 'error');
+  return;
+}
 
   this.savingAlert = true;
 
