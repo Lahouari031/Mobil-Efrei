@@ -22,4 +22,11 @@ export const DEMO_DESTINATION_PATH = `/destinations/${DEMO_DESTINATION_SLUG}`;
 export const GLOBE_POINTS = {
   paris: { lat: 48.86, lon: 2.35 },
   capeTown: { lat: -33.92, lon: 18.42 },
+  budapest: { lat: 47.5, lon: 19.04 },
 };
+
+// Destinations pinned on the Explore globe (add Warsaw here when its page is ready)
+export const GLOBE_DESTINATIONS = [
+  { slug: 'cape-town', city: 'Cape Town', ...GLOBE_POINTS.capeTown },
+  { slug: 'budapest', city: 'Budapest', ...GLOBE_POINTS.budapest },
+];

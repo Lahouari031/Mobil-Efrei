@@ -12,14 +12,29 @@
       >
         {{ cat.label }}
       </button>
+      <!-- Extra tabs: interactive map of the geolocated tips and TikTok videos -->
+      <button
+        v-for="tab in extraTabs"
+        :key="tab.key"
+        role="tab"
+        :aria-selected="tab.key === active"
+        :class="{ 'is-active': tab.key === active }"
+        @click="active = tab.key"
+      >
+        {{ tab.label }}
+      </button>
     </div>
 
-    <p v-if="!tips.length" class="muted">No tips yet.</p>
+    <p v-if="!tips.length && active !== 'videos'" class="muted">No tips yet.</p>
 
-    <ul class="tips">
+    <TipMap v-if="active === 'map'" :tips="mappedTips" />
+    <TikTokVideos v-else-if="active === 'videos'" :videos="videos" />
+
+    <ul v-else class="tips">
       <li v-for="tip in activeTips" :key="tip.id" class="tip">
         <h3>{{ tip.title }}</h3>
         <p class="muted">{{ tip.content }}</p>
+        <p v-if="tip.address" class="address">📍 {{ tip.address }}</p>
         <a v-if="tip.link" :href="tip.link" target="_blank" rel="noopener">Learn more</a>
       </li>
     </ul>
@@ -28,11 +43,15 @@
 
 <script>
 import { CATEGORIES } from '../constants';
+import TipMap from './TipMap.vue';
+import TikTokVideos from './TikTokVideos.vue';
 
 export default {
   name: 'TipTabs',
+  components: { TipMap, TikTokVideos },
   props: {
     tips: { type: Array, default: () => [] },
+    videos: { type: Array, default: () => [] },
   },
   data() {
     return { active: null };
@@ -41,6 +60,16 @@ export default {
     // Only the categories that contain at least one tip are shown
     availableCategories() {
       return CATEGORIES.filter((c) => this.tips.some((t) => t.category === c.key));
+    },
+    // Tips with GPS coordinates are shown on the map
+    mappedTips() {
+      return this.tips.filter((t) => t.latitude != null && t.longitude != null);
+    },
+    extraTabs() {
+      const tabs = [];
+      if (this.mappedTips.length) tabs.push({ key: 'map', label: 'Map' });
+      tabs.push({ key: 'videos', label: 'Videos' });
+      return tabs;
     },
     activeTips() {
       return this.tips.filter((t) => t.category === this.active);
@@ -51,7 +80,8 @@ export default {
     availableCategories: {
       immediate: true,
       handler(list) {
-        if (!list.find((c) => c.key === this.active)) this.active = list[0]?.key ?? null;
+        const keys = [...list, ...this.extraTabs].map((t) => t.key);
+        if (!keys.includes(this.active)) this.active = keys[0] ?? null;
       },
     },
   },
@@ -71,4 +101,5 @@ export default {
 .tip:last-child { border-bottom: 0; }
 .tip h3 { margin-bottom: 0.3rem; }
 .tip p { margin: 0 0 0.3rem; }
+.tip .address { font-size: 0.85rem; }
 </style>

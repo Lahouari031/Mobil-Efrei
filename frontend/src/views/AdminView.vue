@@ -2,7 +2,7 @@
 <template>
   <div class="container">
     <h1>Admin</h1>
-    <p class="muted">Manage the tips shown on each destination.</p>
+    <p class="muted">Manage the tips, urgent alerts and videos shown on each destination.</p>
 
     <p v-if="message" class="alert" :class="{ 'alert-success': messageType === 'success' }">{{ message }}</p>
 
@@ -44,68 +44,80 @@
         </table>
       </section>
     </div>
+    <!-- Urgent alerts: kept in history, an admin activates / deactivates them -->
     <section class="alerts-admin">
-  <h2>Urgent alerts — Cape Town</h2>
+      <h2>Urgent alerts</h2>
 
-  <form @submit.prevent="publishAlert">
-    <div class="form-field">
-      <label for="alert-title">Alert title</label>
-      <input
-        id="alert-title"
-        v-model="newAlert.title"
-        class="input"
-        maxlength="150"
-        required
-      />
-    </div>
+      <form @submit.prevent="publishAlert">
+        <div class="form-field">
+          <label for="alert-dest">Destination</label>
+          <select id="alert-dest" v-model.number="newAlert.destinationId" class="input" required>
+            <option v-for="d in destinations" :key="d.id" :value="d.id">{{ d.flag }} {{ d.city }}</option>
+          </select>
+        </div>
 
-    <div class="form-field">
-  <label for="alert-date">Alert date</label>
-  <input
-    id="alert-date"
-    type="date"
-    v-model="newAlert.alertDate"
-    class="input"
-    required
-  />
-</div>
+        <div class="form-field">
+          <label for="alert-title">Alert title</label>
+          <input id="alert-title" v-model="newAlert.title" class="input" maxlength="150" required />
+        </div>
 
+        <div class="form-field">
+          <label for="alert-date">Alert date</label>
+          <input id="alert-date" v-model="newAlert.alertDate" type="date" class="input" required />
+        </div>
 
-    <div class="form-field">
-      <label for="alert-details">Alert details</label>
-      <textarea
-        id="alert-details"
-        v-model="newAlert.details"
-        class="input"
-        rows="4"
-        required
-      ></textarea>
-    </div>
+        <div class="form-field">
+          <label for="alert-details">Alert details</label>
+          <textarea id="alert-details" v-model="newAlert.details" class="input" rows="4" required></textarea>
+        </div>
 
-    <button class="btn" :disabled="savingAlert">
-      {{ savingAlert ? 'Publishing...' : 'Publish alert' }}
-    </button>
-  </form>
+        <button class="btn" :disabled="savingAlert">{{ savingAlert ? 'Publishing…' : 'Publish alert' }}</button>
+      </form>
 
-  <h3>Published alerts</h3>
+      <h3>Published alerts</h3>
+      <p v-if="!urgentAlerts.length" class="muted">No alerts yet.</p>
+      <ul v-else>
+        <li v-for="alert in urgentAlerts" :key="alert.id" :class="{ 'is-inactive': !alert.active }">
+          <span class="tag">{{ alert.destination?.city }}</span>
+          <strong>{{ alert.title }}</strong>
+          <span class="muted">{{ formatAlertDate(alert.alertDate || alert.createdAt) }}</span>
+          <span>{{ alert.active ? 'Active' : 'Inactive' }}</span>
+          <button class="link-btn" @click="toggleAlert(alert)">{{ alert.active ? 'Deactivate' : 'Activate' }}</button>
+        </li>
+      </ul>
+    </section>
 
-  <p v-if="!urgentAlerts.length" class="muted">
-    No alerts yet.
-  </p>
+    <!-- TikTok videos shown in the "Videos" tab of each destination -->
+    <section class="alerts-admin">
+      <h2>TikTok videos</h2>
 
-  <ul v-else>
-    <li v-for="alert in urgentAlerts" :key="alert.id">
-      <strong>{{ alert.title }}</strong>
-      <span class="muted">
-  {{ formatAlertDate(alert.alertDate || alert.createdAt) }}
-</span>
-      <span>{{ alert.active ? 'Active' : 'Inactive' }}</span>
-      <button class="link-btn" @click="toggleAlert(alert)">
-        {{ alert.active ? 'Deactivate' : 'Reactivate' }}
-      </button>
-    </li>
-  </ul>
-</section>
+      <form @submit.prevent="addVideo">
+        <div class="form-field">
+          <label for="video-dest">Destination</label>
+          <select id="video-dest" v-model.number="newVideo.destinationId" class="input" required>
+            <option v-for="d in destinations" :key="d.id" :value="d.id">{{ d.flag }} {{ d.city }}</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="video-url">TikTok link</label>
+          <input id="video-url" v-model.trim="newVideo.url" class="input" placeholder="https://www.tiktok.com/@account/video/…" required />
+        </div>
+        <div class="form-field">
+          <label for="video-title">Title (optional)</label>
+          <input id="video-title" v-model="newVideo.title" class="input" maxlength="150" />
+        </div>
+        <button class="btn" :disabled="savingVideo">{{ savingVideo ? 'Adding…' : 'Add video' }}</button>
+      </form>
+
+      <p v-if="!videos.length" class="muted">No videos yet.</p>
+      <ul v-else>
+        <li v-for="video in videos" :key="video.id">
+          <span class="tag">{{ video.destination?.city }}</span>
+          <a :href="video.url" target="_blank" rel="noopener">{{ video.title || video.url }}</a>
+          <button class="link-btn is-danger" @click="removeVideo(video)">Delete</button>
+        </li>
+      </ul>
+    </section>
   </div>
 </template>
 
@@ -119,30 +131,22 @@ export default {
   components: { TipForm },
   data() {
     const now = new Date();
-
-const today = [
-  now.getFullYear(),
-  String(now.getMonth() + 1).padStart(2, '0'),
-  String(now.getDate()).padStart(2, '0')
-].join('-');
-  return {
-    destinations: [],
-    tips: [],
-    editing: null,
-    filterDest: 0,
-    message: '',
-    messageType: 'success',
-
-    urgentAlerts: [],
-    newAlert: {
-  destinationId: null,
-  title: '',
-  details: '',
-  alertDate: today
-},
-    savingAlert: false
-  };
-},
+    const today = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('-');
+    return {
+      destinations: [],
+      tips: [],
+      editing: null,
+      filterDest: 0,
+      message: '',
+      messageType: 'success',
+      urgentAlerts: [],
+      newAlert: { destinationId: null, title: '', details: '', alertDate: today },
+      savingAlert: false,
+      videos: [],
+      newVideo: { destinationId: null, url: '', title: '' },
+      savingVideo: false,
+    };
+  },
   computed: {
     filteredTips() {
       return this.filterDest ? this.tips.filter((t) => t.destinationId === this.filterDest) : this.tips;
@@ -153,62 +157,74 @@ const today = [
     const [destinations, tips] = await Promise.all([api.get('/destinations'), api.get('/tips')]);
     this.destinations = destinations;
     this.tips = tips;
-    this.newAlert.destinationId =
-  destinations.find(d => d.slug === 'cape-town')?.id ?? null;
-
-try {
-  this.urgentAlerts = await api.get('/urgent-alerts');
-} catch (e) {
-  this.notify(e.message, 'error');
-}
+    // Cape Town is selected by default in the alert and video forms
+    const defaultId = destinations.find((d) => d.slug === 'cape-town')?.id ?? destinations[0]?.id ?? null;
+    this.newAlert.destinationId = defaultId;
+    this.newVideo.destinationId = defaultId;
+    try {
+      [this.urgentAlerts, this.videos] = await Promise.all([api.get('/urgent-alerts'), api.get('/videos')]);
+    } catch (e) {
+      this.notify(e.message, 'error');
+    }
   },
   methods: {
     formatAlertDate(date) {
-  return new Date(date).toLocaleDateString('en-GB');
-},
-
-async publishAlert() {
-  if (this.savingAlert) return;
-
-  if (!this.newAlert.destinationId) {
-    this.notify('Cape Town not found.', 'error');
-    return;
-  }
-
-  this.savingAlert = true;
-
-  try {
-    await api.post('/urgent-alerts', {
-  destinationId: this.newAlert.destinationId,
-  title: this.newAlert.title.trim(),
-  details: this.newAlert.details.trim(),
-  alertDate: this.newAlert.alertDate
-});
-    this.urgentAlerts = await api.get('/urgent-alerts');
-
-    this.newAlert.title = '';
-    this.newAlert.details = '';
-
-    this.notify('Alert published.');
-  } catch (e) {
-    this.notify(e.message, 'error');
-  } finally {
-    this.savingAlert = false;
-  }
-},
-
-async toggleAlert(alert) {
-  try {
-    await api.put(`/urgent-alerts/${alert.id}`, {
-      active: !alert.active
-    });
-
-    this.urgentAlerts = await api.get('/urgent-alerts');
-    this.notify('Alert status updated.');
-  } catch (e) {
-    this.notify(e.message, 'error');
-  }
-},
+      return new Date(date).toLocaleDateString('en-GB');
+    },
+    async publishAlert() {
+      if (this.savingAlert) return;
+      this.savingAlert = true;
+      try {
+        await api.post('/urgent-alerts', {
+          destinationId: this.newAlert.destinationId,
+          title: this.newAlert.title.trim(),
+          details: this.newAlert.details.trim(),
+          alertDate: this.newAlert.alertDate,
+        });
+        this.urgentAlerts = await api.get('/urgent-alerts');
+        this.newAlert.title = '';
+        this.newAlert.details = '';
+        this.notify('Alert published.');
+      } catch (e) {
+        this.notify(e.message, 'error');
+      } finally {
+        this.savingAlert = false;
+      }
+    },
+    async toggleAlert(alert) {
+      try {
+        await api.put(`/urgent-alerts/${alert.id}`, { active: !alert.active });
+        this.urgentAlerts = await api.get('/urgent-alerts');
+        this.notify(alert.active ? 'Alert deactivated.' : 'Alert activated.');
+      } catch (e) {
+        this.notify(e.message, 'error');
+      }
+    },
+    async addVideo() {
+      if (this.savingVideo) return;
+      this.savingVideo = true;
+      try {
+        await api.post('/videos', this.newVideo);
+        this.videos = await api.get('/videos');
+        this.newVideo.url = '';
+        this.newVideo.title = '';
+        this.notify('Video added.');
+      } catch (e) {
+        this.notify(e.message, 'error');
+      } finally {
+        this.savingVideo = false;
+      }
+    },
+    async removeVideo(video) {
+      if (!window.confirm('Delete this video?')) return;
+      try {
+        await api.delete(`/videos/${video.id}`);
+        this.videos = this.videos.filter((v) => v.id !== video.id);
+        this.notify('Video deleted.');
+      } catch (e) {
+        this.notify(e.message, 'error');
+      }
+    },
     categoryLabel,
     notify(text, type = 'success') {
       this.message = text;
@@ -284,4 +300,5 @@ async toggleAlert(alert) {
   padding: 1rem 0;
   border-bottom: 1px solid var(--line);
 }
+.alerts-admin li.is-inactive { opacity: 0.55; }
 </style>
