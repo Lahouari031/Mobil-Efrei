@@ -31,7 +31,13 @@
           <div><dt>Currency</dt><dd>{{ destination.currency || '—' }}</dd></div>
         </dl>
 
-        <TipTabs :tips="destination.tips" :videos="videos" />
+        <TipTabs :tips="destination.tips" />
+      </section>
+
+      <!-- Videos: at the end of the page, just above the comments -->
+      <section class="block" aria-labelledby="videos-heading">
+        <h2 id="videos-heading">Videos</h2>
+        <TikTokVideos :videos="videos" />
       </section>
 
       <CommentSection :destination-id="destination.id" class="block" />
@@ -43,11 +49,12 @@
 import UrgentAlerts from '../components/UrgentAlerts.vue';
 import TipTabs from '../components/TipTabs.vue';
 import CommentSection from '../components/CommentSection.vue';
+import TikTokVideos from '../components/TikTokVideos.vue';
 import { api } from '../api/client';
 
 export default {
   name: 'DestinationView',
-  components: { TipTabs, CommentSection, UrgentAlerts },
+  components: { TipTabs, CommentSection, UrgentAlerts, TikTokVideos },
   props: { slug: { type: String, required: true } },
   data() {
     return { destination: null, videos: [], loading: true, error: '' };

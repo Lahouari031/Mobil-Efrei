@@ -33,6 +33,11 @@ export default {
     }).addTo(this.map);
     this.layer = L.layerGroup().addTo(this.map);
     this.drawMarkers();
+    // Leaflet measures its container when created: re-measure once the tab is displayed
+    this.$nextTick(() => {
+      this.map.invalidateSize();
+      this.drawMarkers();
+    });
   },
   unmounted() {
     this.map?.remove();
