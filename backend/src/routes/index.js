@@ -8,6 +8,7 @@ const destinations = require('../controllers/destinationController');
 const tips = require('../controllers/tipController');
 const comments = require('../controllers/commentController');
 const urgentAlerts = require('../controllers/urgentAlertController');
+const videos = require('../controllers/videoController');
 
 const router = express.Router();
 
@@ -68,5 +69,11 @@ router.put(
   requireAdmin,
   h(urgentAlerts.update)
 );
+
+// ---------- TikTok videos ----------
+router.get('/destinations/:destinationId/videos', requireAuth, h(videos.listForDestination));
+router.get('/videos', requireAdmin, h(videos.listAll));
+router.post('/videos', requireAdmin, h(videos.create));
+router.delete('/videos/:id', requireAdmin, h(videos.remove));
 
 module.exports = router;

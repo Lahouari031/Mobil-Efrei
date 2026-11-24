@@ -8,7 +8,7 @@ module.exports = {
     const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'Admin1234', 12);
     const now = new Date();
     await queryInterface.bulkInsert('users', [
-      { email: 'admin@efrei.net', username: 'admin', password_hash: passwordHash, role: 'admin', created_at: now, updated_at: now },
+      { email: 'admin@efrei.net', username: 'admin', password_hash: passwordHash, role: 'admin', email_verified_at: now, created_at: now, updated_at: now },
     ]);
   },
   async down(queryInterface) {

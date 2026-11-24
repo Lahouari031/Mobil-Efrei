@@ -8,6 +8,10 @@ const pick = (body) => ({
   title: body.title.trim(),
   content: body.content.trim(),
   link: body.link?.trim() || null,
+  address: body.address?.trim() || null,
+  // Empty string / null => the tip is simply not shown on the map
+  latitude: body.latitude === '' || body.latitude == null ? null : Number(body.latitude),
+  longitude: body.longitude === '' || body.longitude == null ? null : Number(body.longitude),
 });
 
 // GET /api/tips?destinationId=1  (Read)

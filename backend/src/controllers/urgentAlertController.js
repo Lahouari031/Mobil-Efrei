@@ -1,4 +1,4 @@
-const { UrgentAlert, Destination, sequelize } = require('../models');
+const { UrgentAlert, Destination } = require('../models');
 
 // Vérifie qu'un identifiant est valide
 const validId = (id) =>
@@ -28,6 +28,7 @@ exports.listForDestination = async (req, res) => {
 // 2. Récupérer toutes les alertes pour l'admin
 exports.listForAdmin = async (req, res) => {
   const alerts = await UrgentAlert.findAll({
+    include: [{ model: Destination, as: 'destination', attributes: ['id', 'city', 'flag'] }],
     order: [['createdAt', 'DESC']]
   });
 
@@ -35,7 +36,6 @@ exports.listForAdmin = async (req, res) => {
 };
 
 
-// 3. Créer une nouvelle alerte
 // 3. Créer une nouvelle alerte
 exports.create = async (req, res) => {
   const { destinationId, alertDate } = req.body;
@@ -81,24 +81,13 @@ exports.create = async (req, res) => {
     });
   }
 
-  // Supprimer les anciennes alertes et créer la nouvelle
-  const alert = await sequelize.transaction(async (transaction) => {
-
-    await UrgentAlert.destroy({
-      where: {
-        destinationId: Number(destinationId)
-      },
-      transaction
-    });
-
-    return UrgentAlert.create({
-      destinationId: Number(destinationId),
-      title,
-      details,
-      alertDate,
-      active: true
-    }, { transaction });
-
+  // Previous alerts are kept: the admin activates / deactivates them from the admin page
+  const alert = await UrgentAlert.create({
+    destinationId: Number(destinationId),
+    title,
+    details,
+    alertDate,
+    active: true,
   });
 
   res.status(201).json(alert);

@@ -4,11 +4,11 @@
     <p class="muted">Select the pin on a country to open the student guide of it.</p>
 
     <div class="explore__globe">
-      <Globe3D>
-        <template #marker>
-          <router-link :to="destinationPath" class="cape-town-pin">
+      <Globe3D :points="points">
+        <template #marker="{ point }">
+          <router-link :to="`/destinations/${point.slug}`" class="cape-town-pin">
             <span class="cape-town-pin__dot" aria-hidden="true"></span>
-            <span class="cape-town-pin__label">Cape Town</span>
+            <span class="cape-town-pin__label">{{ point.city }}</span>
           </router-link>
         </template>
       </Globe3D>
@@ -18,16 +18,16 @@
 
 <script>
 import Globe3D from '../components/Globe3D.vue';
-import { DEMO_DESTINATION_PATH } from '../constants';
+import { GLOBE_DESTINATIONS } from '../constants';
 
 export default {
   name: 'ExploreView',
   components: { Globe3D },
   data() {
-    return { destinationPath: DEMO_DESTINATION_PATH };
+    return { points: GLOBE_DESTINATIONS };
   },
   mounted() {
-    document.title = "Explore South Africa · Mobil'Efrei";
+    document.title = "Explore · Mobil'Efrei";
   },
 };
 </script>

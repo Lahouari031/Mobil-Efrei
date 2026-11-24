@@ -2,8 +2,9 @@
   <div class="globe">
     <div ref="canvas" class="globe__canvas" aria-hidden="true"></div>
     <p v-if="unavailable" class="globe__notice muted">The 3D globe is unavailable on this device.</p>
-    <div ref="marker" class="globe__marker">
-      <slot name="marker" />
+    <!-- One HTML marker per point: its position follows the 3D globe -->
+    <div v-for="point in points" :key="point.slug" ref="markers" class="globe__marker">
+      <slot name="marker" :point="point" />
     </div>
   </div>
 </template>
@@ -44,6 +45,10 @@ const R = 2;
 
 export default {
   name: 'Globe3D',
+  props: {
+    // [{ slug, city, lat, lon }]: destinations linked to Paris by a flight arc
+    points: { type: Array, default: () => [] },
+  },
   data() {
     return { unavailable: false };
   },
@@ -63,7 +68,7 @@ export default {
   methods: {
     init() {
       const el = this.$refs.canvas;
-      const marker = this.$refs.marker;
+      const markers = this.$refs.markers || [];
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
       // ---------- Renderer, scene, camera ----------
@@ -113,18 +118,21 @@ export default {
       parisDot.position.copy(paris);
       globe.add(parisDot);
 
-      const { lat, lon } = GLOBE_POINTS.capeTown;
-      const capeTown = latLonToVec3(lat, lon, R);
-      const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
-      dot.position.copy(capeTown);
-      globe.add(dot);
+      // One dot + one animated flight arc (Paris -> destination) per point
+      const targets = this.points.map(({ lat, lon }) => latLonToVec3(lat, lon, R));
+      const arcs = targets.map((target) => {
+        const dot = new THREE.Mesh(dotGeo, new THREE.MeshBasicMaterial({ color: 0xffffff }));
+        dot.position.copy(target);
+        globe.add(dot);
 
-      // Lift the middle of the flight arc above the surface.
-      const mid = paris.clone().add(capeTown).multiplyScalar(0.5);
-      mid.normalize().multiplyScalar(R + paris.distanceTo(capeTown) * 0.4);
-      const curve = new THREE.QuadraticBezierCurve3(paris, mid, capeTown);
-      const arc = new THREE.BufferGeometry().setFromPoints(curve.getPoints(100));
-      globe.add(new THREE.Line(arc, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })));
+        // Lift the middle of the flight arc above the surface.
+        const mid = paris.clone().add(target).multiplyScalar(0.5);
+        mid.normalize().multiplyScalar(R + paris.distanceTo(target) * 0.4);
+        const curve = new THREE.QuadraticBezierCurve3(paris, mid, target);
+        const arc = new THREE.BufferGeometry().setFromPoints(curve.getPoints(100));
+        globe.add(new THREE.Line(arc, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 })));
+        return arc;
+      });
 
       // Initial orientation: Europe and Africa face the camera
       const baseY = -Math.PI / 2 - THREE.MathUtils.degToRad(GLOBE_POINTS.paris.lon);
@@ -145,10 +153,17 @@ export default {
       // ---------- Animation loop ----------
       const draw = () => {
         renderer.render(scene, camera);
-        // Project Cape Town onto the screen so its HTML link follows the globe.
-        screenPoint.copy(capeTown).applyMatrix4(globe.matrixWorld).project(camera);
-        marker.style.left = ((screenPoint.x + 1) * 50) + '%';
-        marker.style.top = ((1 - screenPoint.y) * 50) + '%';
+        // Project each destination onto the screen so its HTML link follows the globe.
+        targets.forEach((target, i) => {
+          const marker = markers[i];
+          if (!marker) return;
+          const world = target.clone().applyMatrix4(globe.matrixWorld);
+          screenPoint.copy(world).project(camera);
+          marker.style.left = ((screenPoint.x + 1) * 50) + '%';
+          marker.style.top = ((1 - screenPoint.y) * 50) + '%';
+          // Hide the pin when the city is on the back of the globe
+          marker.style.visibility = world.z > 0 ? 'visible' : 'hidden';
+        });
       };
       
       let drag = null;
@@ -184,7 +199,7 @@ export default {
         const t = (performance.now() - start) / 1000; // elapsed time in seconds
 
         const progress = Math.max(0, Math.min(1, (t - 0.5) / 1.5));
-        arc.setDrawRange(0, Math.floor(progress * 101));
+        arcs.forEach((arc) => arc.setDrawRange(0, Math.floor(progress * 101)));
 
         draw();
         this.frame = requestAnimationFrame(tick);

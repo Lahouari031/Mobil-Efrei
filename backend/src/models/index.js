@@ -13,9 +13,10 @@ const db = {
   Comment: require('./comment')(sequelize),
   Like: require('./like')(sequelize),
   UrgentAlert: require('./urgentAlert')(sequelize),
+  Video: require('./video')(sequelize),
 };
 
-const { User, Destination, Tip, Comment, Like, UrgentAlert } = db;
+const { User, Destination, Tip, Comment, Like, UrgentAlert, Video } = db;
 
 // ---------- Relationships ----------
 // A destination has many tips (1-N)
@@ -47,6 +48,10 @@ UrgentAlert.belongsTo(Destination, {
   foreignKey: 'destinationId',
   as: 'destination',
 });
+
+// A destination has many TikTok videos (1-N)
+Destination.hasMany(Video, { foreignKey: 'destinationId', as: 'videos', onDelete: 'CASCADE' });
+Video.belongsTo(Destination, { foreignKey: 'destinationId', as: 'destination' });
 
 db.sequelize = sequelize;
 db.Sequelize = Sequelize;

@@ -31,7 +31,7 @@
           <div><dt>Currency</dt><dd>{{ destination.currency || '—' }}</dd></div>
         </dl>
 
-        <TipTabs :tips="destination.tips" />
+        <TipTabs :tips="destination.tips" :videos="videos" />
       </section>
 
       <CommentSection :destination-id="destination.id" class="block" />
@@ -50,7 +50,7 @@ export default {
   components: { TipTabs, CommentSection, UrgentAlerts },
   props: { slug: { type: String, required: true } },
   data() {
-    return { destination: null, loading: true, error: '' };
+    return { destination: null, videos: [], loading: true, error: '' };
   },
   watch: {
     // Reloads if we go directly from one destination to another
@@ -63,6 +63,8 @@ export default {
       try {
         this.destination = await api.get(`/destinations/${this.slug}`);
         document.title = `${this.destination.city} · Mobil'Efrei`;
+        // The videos are optional: if they fail to load, the page is still shown
+        this.videos = await api.get(`/destinations/${this.destination.id}/videos`).catch(() => []);
       } catch (e) {
         this.error = e.status === 404 ? "This destination doesn't exist (yet!)." : e.message;
       } finally {
