@@ -7,7 +7,10 @@ import HomeView from '../views/HomeView.vue';
 import ExploreView from '../views/ExploreView.vue';
 import DestinationView from '../views/DestinationView.vue';
 import AdminView from '../views/AdminView.vue';
+import ShopView from '../views/ShopView.vue';
 import NotFoundView from '../views/NotFoundView.vue';
+
+
 
 const routes = [
   // Public landing page = sign-in page ("/") or sign-up page ("/register")
@@ -16,10 +19,12 @@ const routes = [
   { path: '/login', redirect: '/' },
 
   // Protected pages
-  { path: '/explore', name: 'explore', component: ExploreView, meta: { requiresAuth: true } },
-  { path: '/destinations', name: 'home', component: HomeView, meta: { requiresAuth: true } },
-  { path: '/destinations/:slug', name: 'destination', component: DestinationView, meta: { requiresAuth: true }, props: true },
-  { path: '/admin', name: 'admin', component: AdminView, meta: { requiresAuth: true, requiresAdmin: true } },
+  // Protected pages
+{ path: '/explore', name: 'explore', component: ExploreView, meta: { requiresAuth: true } },
+{ path: '/destinations', name: 'home', component: HomeView, meta: { requiresAuth: true } },
+{ path: '/destinations/:slug', name: 'destination', component: DestinationView, meta: { requiresAuth: true }, props: true },
+{ path: '/shop', name: 'shop', component: ShopView, meta: { requiresAuth: true } },
+{ path: '/admin', name: 'admin', component: AdminView, meta: { requiresAuth: true, requiresAdmin: true } },
 
   { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
 ];

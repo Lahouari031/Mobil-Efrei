@@ -32,6 +32,7 @@
             </li>
             <li><router-link to="/explore">Explore</router-link></li>
             <li><router-link to="/destinations">All destinations</router-link></li>
+            <li><router-link to="/shop">Shop</router-link></li>
             <li v-if="auth.isAdmin"><router-link to="/admin">Admin</router-link></li>
             <li><button type="button" class="menu__logout" @click="onLogout">Sign out</button></li>
           </ul>
