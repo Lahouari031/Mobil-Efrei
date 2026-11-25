@@ -1,7 +1,7 @@
 'use strict';
 // Seeder: creates an administrator account used to manage tips (admin area)
 require('dotenv').config();
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 module.exports = {
   async up(queryInterface) {

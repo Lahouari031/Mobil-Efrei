@@ -6,7 +6,7 @@
 // On an existing database, run only this seeder:
 //   npx sequelize-cli db:seed --seed 20261124000001-second-admin.js
 require('dotenv').config();
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const { ADMIN2_EMAIL, ADMIN2_USERNAME, ADMIN2_PASSWORD } = process.env;
 

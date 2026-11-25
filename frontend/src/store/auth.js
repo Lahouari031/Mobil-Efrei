@@ -35,6 +35,14 @@ async register(payload) {
   return result;
 },
 
+// Forgotten password: 1. ask for a code, 2. send the code with the new password
+forgotPassword(email) {
+  return api.post('/auth/forgot-password', { email });
+},
+resetPassword(code, password) {
+  return api.post('/auth/reset-password', { code, password });
+},
+
 async verifyEmail(code) {
   const { user } = await api.post('/auth/verify-email', { code });
   this.user = user;

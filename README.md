@@ -14,7 +14,7 @@ Signed-in students post feedback, the community likes it, and the most useful ti
 | Front end | Vue 3 (Options API), Vue Router, Vite, HTML5, CSS3, Three.js (3D globe), GSAP (animations), Leaflet (maps) |
 | Back end | Node.js, Express.js |
 | Database | MySQL with the Sequelize ORM (migrations and seeders via sequelize-cli) |
-| Security | bcrypt, express-session (httpOnly cookie), parameterised queries, email verification code |
+| Security | bcrypt (bcryptjs), express-session (httpOnly cookie), parameterised queries, email verification code, password reset by code |
 | External APIs | OpenStreetMap tiles (map), Nominatim (address → coordinates), TikTok oEmbed + embed player (videos) |
 
 ## Quick start (from the project root)
@@ -60,13 +60,21 @@ Vite forwards `/api` calls to port 3000, so there is no CORS to configure.
 
 Admin accounts never need an email code.
 
-### Email verification code (important for the demo)
-When a student signs up (or signs in with an account that is not verified yet), the site asks for a **6-digit code**.
-No real email is sent: the code is **printed in the terminal where the back end runs** (`npm run dev`), for example:
+### Email codes: verification and forgotten password (important for the demo)
+Two features send a **6-digit code** by email:
+- **Sign up** (or sign in with an account that is not verified yet): the site asks for the code to confirm the EFREI address.
+- **Forgot password?** (link under the password on the Sign in form): enter your email, receive a code, then choose a new password.
+
+By default no real email is sent: the email is **printed in the terminal where the back end runs** (`npm run dev`):
 ```
-Your verification code is 482913.
+┌─ 📧 Email to firstname.lastname@efrei.net
+│  Mobil'Efrei – Reset your password
+│  Your password reset code is 482913. It is valid for 10 minutes. …
+└──────────────────────────────
 ```
-Copy it into the form. The code is valid for 10 minutes and allows 5 attempts. This only works with `NODE_ENV=development` in `.env`.
+Copy the code into the form. A code is valid for 10 minutes, allows 5 attempts and only its bcrypt hash is stored (in the session).
+To send real emails, fill in `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS` in `.env` (e.g. Gmail with an app password).
+The "forgot password" answer is always the same, so nobody can find out which emails have an account.
 
 To reset the database: `npm run db:reset`
 
@@ -82,6 +90,7 @@ backend/src
 ├── seeders/                Initial data
 ├── controllers/            C: business logic (auth, destinations, tips, comments, urgent alerts, videos)
 ├── services/tiktokPreview.js  Calls the TikTok oEmbed API (video thumbnails), with a 1-hour cache
+├── services/mailer.js      Sends the codes by email (SMTP) or prints them in the terminal
 ├── routes/index.js         URL → middlewares → controller
 ├── middlewares/            requireAuth / requireAdmin, error handling
 ├── validators/             Server-side input validation
@@ -117,6 +126,8 @@ The full SQL schema is in `backend/schema.sql`.
 |---|---|---|---|
 | POST | `/api/auth/register` | public | Sign up |
 | POST | `/api/auth/verify-email` | public (pending session) | Check the 6-digit code |
+| POST | `/api/auth/forgot-password` | public | Send a password reset code |
+| POST | `/api/auth/reset-password` | public (pending session) | Code + new password |
 | POST | `/api/auth/login` | public | Sign in (email or username) |
 | POST | `/api/auth/logout` | public | Sign out |
 | GET | `/api/auth/me` | public | Current user |
@@ -143,14 +154,15 @@ The full SQL schema is in `backend/schema.sql`.
 |---|---|
 | DOM manipulation | `v-reveal` directive (`main.js`): `classList.add` + `IntersectionObserver` |
 | CSS specificity and inheritance | `assets/style.css`: ID (`#app`), class, tag and attribute selectors (`a[target="_blank"]`, `button[disabled]`, `input[type="password"]`), variables inherited from `:root`, font inherited by `input` |
-| JS event handling (callbacks) | `ScrollTopButton.vue` (`addEventListener('scroll', callback)`), `Globe3D.vue` (mousemove, resize) |
+| JS event handling (callbacks) | `ScrollTopButton.vue` (`addEventListener('scroll', callback)`), `Globe3D.vue` (pointer, resize), `NavBar.vue` (click outside / Escape closes the menu) |
 | Vue instance and directives | `main.js` (`createApp`), `v-if`, `v-for`, `v-model`, `v-show`, `v-bind` (`:class`, `:style`) |
 | Components and communication | props and `$emit` between `CommentSection` and `CommentItem`, and between `AdminView` and `TipForm` |
-| Forms and table | `AuthPanel` (live validation, password strength meter), `TipForm` and the `AdminView` table |
+| Forms and table | `AuthPanel` (required fields marked with *, live validation, password strength meter, forgot password), `TipForm` and the `AdminView` table |
+| Navigation | `NavBar.vue`: hamburger menu (3 lines → cross), `aria-expanded`, closes on page change |
 | Express and CRUD | `routes/index.js`, `controllers/*` (full CRUD on tips, destinations and comments) |
 | Asynchronous programming | `async/await` everywhere, `Promise.all` (`AdminView`), callback wrapped in a Promise (`regenerateSession`) |
 | MySQL and Sequelize | `models/`, `migrations/`, SQL sub-query counting likes (`commentController`) |
-| bcrypt | `authController.js`: `bcrypt.hash` (12 rounds) and `bcrypt.compare` |
+| bcrypt | `authController.js`: `bcrypt.hash` (12 rounds) and `bcrypt.compare` (bcryptjs: same algorithm, pure JavaScript, nothing to compile on Windows) |
 | Sessions | `app.js` (httpOnly and sameSite cookie), `req.session.regenerate` on sign-in, `destroy` on sign-out |
 | Protected routes | `middlewares/auth.js` on the API side, `router.beforeEach` on the front-end side |
 | SQL injection | Sequelize generates parameterised queries. Tested with `admin' OR '1'='1`: sign-in is refused |
@@ -161,3 +173,23 @@ The full SQL schema is in `backend/schema.sql`.
 - **Map** (bottom of the *Best places* tab): every tip with coordinates is a pin on an OpenStreetMap map (click → tip + directions). In the admin form, type an address and click **Locate** to fill the latitude / longitude automatically.
 - **Videos** (end of the page, just above the comments): grid of TikTok previews; clicking one plays it in a player on the page (no redirection). Admins add the links in the admin area.
 - **Urgent alerts** (top right): published by an admin for one destination, kept in history, and only shown while they are active.
+
+---
+
+## Common problems (Windows)
+
+| Message | Fix |
+|---|---|
+| `npm : Impossible de charger le fichier … npm.ps1` / `running scripts is disabled` | In PowerShell, once: `Set-ExecutionPolicy RemoteSigned -Scope CurrentUser` (answer `O`/`Y`) |
+| `npm warn install-scripts … esbuild` | `cd frontend`, `npm install-scripts approve esbuild`, `npm rebuild esbuild`, `cd ..` |
+| `mysql` is not recognised | Normal: the project does not need this command. Check that the MySQL **service** runs: `Get-Service *mysql*` → `MySQL84 Running` |
+| `Get-Service *mysql*` shows nothing | MySQL is not installed: https://dev.mysql.com/downloads/mysql/8.4.html → Windows MSI Installer → Typical → MySQL Configurator (port 3306, choose a root password) |
+| MySQL Configurator asks for an old root password | Old data from a previous install: close it, in an **administrator** PowerShell run `Rename-Item "C:\ProgramData\MySQL" "MySQL_old"`, then open MySQL Configurator again |
+| `[api] ❌ Unable to connect … ECONNREFUSED` | MySQL is stopped or `DB_PORT` is wrong (3306 on Windows, 8889 with MAMP) |
+| `[api] ❌ Unable to connect … Access denied` | `DB_PASSWORD` in `backend/.env` is not the MySQL root password |
+| `[api] ❌ Unable to connect … Unknown database` | Run `npm run db:setup` |
+| "Something went wrong." on the website | The API is not running: read the `[api]` lines in the terminal |
+| Cannot sign in with the admin account | `npm run db:reset` recreates both admins with the passwords of `backend/.env` |
+
+To look at the data: MySQL Workbench (https://dev.mysql.com/downloads/workbench/) → Local instance → schema `mobilefrei`.
+
