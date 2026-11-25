@@ -17,6 +17,16 @@ function validateRegister({ email, username, password }) {
   return errors;
 }
 
+function validateEmail(email) {
+  return isString(email) && EMAIL_REGEX.test(email.trim()) ? [] : ['Only @efrei.net email addresses are accepted.'];
+}
+
+function validatePassword(password) {
+  return isString(password) && PASSWORD_REGEX.test(password)
+    ? []
+    : ['Password: at least 8 characters, with at least one letter and one digit.'];
+}
+
 function validateLogin({ login, password }) {
   const errors = [];
   if (!isString(login) || login.trim().length < 3) errors.push('Email or username is required.');
@@ -73,6 +83,8 @@ function validateDestination({ slug, country, city, summary, monthlyBudget }) {
 module.exports = {
   validateRegister,
   validateLogin,
+  validateEmail,
+  validatePassword,
   validateComment,
   validateTip,
   validateDestination,
