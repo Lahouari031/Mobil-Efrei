@@ -10,6 +10,7 @@ const comments = require('../controllers/commentController');
 const urgentAlerts = require('../controllers/urgentAlertController');
 const videos = require('../controllers/videoController');
 
+const efreiDocument = require('../controllers/efreiDocuments');
 const router = express.Router();
 
 // ---------- Authentication (public) ----------
@@ -78,4 +79,29 @@ router.get('/videos', requireAdmin, h(videos.listAll));
 router.post('/videos', requireAdmin, h(videos.create));
 router.delete('/videos/:id', requireAdmin, h(videos.remove));
 
+// ---------- Protected EFREI document ----------
+
+router.get(
+  '/efrei-document/status',
+  requireAuth,
+  efreiDocument.status
+);
+
+router.post(
+  '/efrei-document/unlock',
+  requireAuth,
+  efreiDocument.unlock
+);
+
+router.get(
+  '/efrei-document/preview',
+  requireAuth,
+  efreiDocument.preview
+);
+
+router.get(
+  '/efrei-document/download',
+  requireAuth,
+  efreiDocument.download
+);
 module.exports = router;

@@ -31,7 +31,11 @@
           <div><dt>Currency</dt><dd>{{ destination.currency || '—' }}</dd></div>
         </dl>
 
-        <TipTabs :tips="destination.tips" />
+        <TipTabs
+  :tips="destination.tips"
+  :videos="videos"
+  :destination-slug="destination.slug"
+/>
       </section>
 
       <!-- Videos: at the end of the page, just above the comments -->
